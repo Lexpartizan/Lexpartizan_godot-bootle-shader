@@ -1,0 +1,62 @@
+[gd_resource type="SpatialMaterial" load_steps=5 format=2]
+
+[sub_resource type="Shader" id=1]
+code = "shader_type spatial;
+render_mode cull_disabled;
+uniform lowp vec2 coeff;
+uniform lowp vec4 liquid_color: hint_color;
+uniform lowp float fill_amount;
+uniform lowp float glass_thickness;
+uniform lowp sampler2D waves_noise;
+varying lowp vec3 pos;
+varying lowp float liquid_height;
+
+void vertex() 
+{
+	VERTEX -= glass_thickness * NORMAL;
+	pos = mat3(WORLD_MATRIX)*VERTEX;
+	liquid_height = fill_amount + pos.x * coeff.x + pos.z * coeff.y;
+}
+
+void fragment() 
+{
+	float noise = texture(waves_noise, pos.xz + TIME).r;
+	float wave_height = noise*1.5 * length(coeff);
+	if (pos.y > liquid_height+wave_height) discard;
+	if (!FRONT_FACING) 
+		{
+		vec3 view_orig = mat3(WORLD_MATRIX) * vec3(0.0f, 0.0f, 0.0f);
+		vec3 view_vec = pos - view_orig;
+		float r = (fill_amount + dot(vec3(coeff.x, -1.0f, coeff.y), view_orig.xyz)) / (-dot(vec3(coeff.x, -1.0f, coeff.y), view_vec.xyz));
+		vec2 surf_pos = (view_orig + r * view_vec).xz;
+		noise =texture(waves_noise, surf_pos + TIME * vec2(1.0, 1.0)).x;
+		NORMAL = vec3(coeff.x, 0.0, coeff.y) + vec3(length(coeff)*noise, 1.0f, length(coeff)*noise) ;
+		ROUGHNESS = 0.4;
+		ALBEDO = mix (liquid_color.xyz,vec3(1.0),0.1);
+		}
+		else ALBEDO = liquid_color.xyz;
+}"
+
+[sub_resource type="OpenSimplexNoise" id=2]
+
+[sub_resource type="NoiseTexture" id=3]
+seamless = true
+noise = SubResource( 2 )
+
+[sub_resource type="ShaderMaterial" id=4]
+shader = SubResource( 1 )
+shader_param/coeff = Vector2( -2.40401e-07, -1.55788e-06 )
+shader_param/liquid_color = Color( 1, 0, 0, 0.270588 )
+shader_param/fill_amount = 0.0
+shader_param/glass_thickness = 0.1
+shader_param/waves_noise = SubResource( 3 )
+
+[resource]
+next_pass = SubResource( 4 )
+flags_transparent = true
+albedo_color = Color( 1, 1, 1, 0.329412 )
+metallic = 0.42
+roughness = 0.1
+refraction_enabled = true
+refraction_scale = 0.01
+refraction_texture_channel = 0
