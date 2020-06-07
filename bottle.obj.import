@@ -1,0 +1,19 @@
+[remap]
+
+importer="wavefront_obj"
+type="Mesh"
+path="res://.import/bottle.obj-d80070e4a9f3c151c69f941f19f46aa2.mesh"
+
+[deps]
+
+files=[ "res://.import/bottle.obj-d80070e4a9f3c151c69f941f19f46aa2.mesh" ]
+
+source_file="res://bottle.obj"
+dest_files=[ "res://.import/bottle.obj-d80070e4a9f3c151c69f941f19f46aa2.mesh", "res://.import/bottle.obj-d80070e4a9f3c151c69f941f19f46aa2.mesh" ]
+
+[params]
+
+generate_tangents=true
+scale_mesh=Vector3( 1, 1, 1 )
+offset_mesh=Vector3( 0, 0, 0 )
+optimize_mesh=true
