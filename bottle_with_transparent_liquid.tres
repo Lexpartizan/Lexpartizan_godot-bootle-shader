@@ -1,49 +1,24 @@
 [gd_resource type="SpatialMaterial" load_steps=5 format=2]
 
-[sub_resource type="Shader" id=1]
-code = "shader_type spatial;
-render_mode cull_disabled;
-uniform lowp vec2 coeff;
-uniform lowp vec4 liquid_color: hint_color;
-uniform lowp float fill_amount;
-uniform lowp float glass_thickness;
-uniform lowp sampler2D waves_noise;
-varying lowp vec3 pos;
-varying lowp float liquid_height;
+[ext_resource path="res://bottle_with_transparent_liquid.shader" type="Shader" id=1]
 
-void vertex() 
-{
-	VERTEX -= glass_thickness * NORMAL;
-	pos = mat3(WORLD_MATRIX)*VERTEX;
-	liquid_height = fill_amount + pos.x * coeff.x + pos.z * coeff.y;
-}
+[sub_resource type="OpenSimplexNoise" id=1]
 
-void fragment() 
-{
-	float noise = texture(waves_noise, pos.xz + TIME).r;
-	float wave_height = noise*1.5 * length(coeff);
-	if (pos.y > liquid_height+wave_height) discard;
-	NORMAL = vec3(0.0,1.0,0.0);
-	ALBEDO = mix (texture(SCREEN_TEXTURE,SCREEN_UV - coeff + (noise+sin(TIME))*0.01,liquid_color.a*2.0).rgb * (1.0 - liquid_color.a),liquid_color.xyz,liquid_color.a);
-}"
+[sub_resource type="NoiseTexture" id=2]
+noise = SubResource( 1 )
 
-[sub_resource type="OpenSimplexNoise" id=2]
-
-[sub_resource type="NoiseTexture" id=3]
-seamless = true
-noise = SubResource( 2 )
-
-[sub_resource type="ShaderMaterial" id=4]
-shader = SubResource( 1 )
-shader_param/coeff = Vector2( 6.24501e-05, -0.00021126 )
-shader_param/liquid_color = Color( 1, 0, 0, 0.270588 )
-shader_param/fill_amount = -0.2371
-shader_param/glass_thickness = 0.1
-shader_param/waves_noise = SubResource( 3 )
+[sub_resource type="ShaderMaterial" id=3]
+shader = ExtResource( 1 )
+shader_param/coeff = Vector2( 3.90981e-23, 4.59021e-22 )
+shader_param/liquid_color = Color( 1, 0, 0, 0.215686 )
+shader_param/rot_scale = 0.134555
+shader_param/fill_amount = -0.0824
+shader_param/glass_thickness = 0.00130855
+shader_param/waves_noise = SubResource( 2 )
 
 [resource]
-next_pass = SubResource( 4 )
+next_pass = SubResource( 3 )
 flags_transparent = true
-albedo_color = Color( 1, 1, 1, 0.329412 )
+albedo_color = Color( 1, 1, 1, 0.12549 )
 metallic = 0.42
 roughness = 0.1
