@@ -1,12 +1,10 @@
 [gd_scene load_steps=5 format=2]
 
-[ext_resource path="res://bottle.obj" type="ArrayMesh" id=1]
+[ext_resource path="res://cap.mesh" type="ArrayMesh" id=1]
 [ext_resource path="res://bottle_with_non_transparent_liquid.tres" type="Material" id=2]
+[ext_resource path="res://bottle.mesh" type="ArrayMesh" id=3]
 
-[sub_resource type="SpatialMaterial" id=1]
-albedo_color = Color( 1, 0, 0, 1 )
-
-[sub_resource type="GDScript" id=2]
+[sub_resource type="GDScript" id=1]
 script/source = "tool
 extends MeshInstance
 
@@ -14,26 +12,34 @@ var coeff : Vector2
 var coeff_old : Vector2
 var coeff_old_old : Vector2
 
-export (float, 0.0,1.0,0.0001) var liquid_viscosity: float = 0.0  #from 0 to 1
-export (float, -10.0,10.0,0.0001) var fill: float = 0.5 setget set_fill #from 0 to 1
+export (float, 0.0,1.0,0.0001) var liquid_mobility: float = 0.0  #from 0 to 1
+export (float, 0.0,1.0,0.0001) var fill: float = 0.5 setget set_fill
 export (float, 0.0,1.0,0.0001) var glass_thickness: float = 0.1 setget set_glass_thickness #from 0 to 1
 onready var pos1 : Vector3 = get_global_transform().origin
 onready var pos2 : Vector3 = pos1
 onready var pos3 : Vector3 = pos2
+#onready var transparent_liquid: Material =preload(\"res://transparent liquid in bootle.tres\")
 var material_pass_1: Material
 var material_pass_2: Material
 export var mat_surface =0;
 #var material_pass_3 = material_pass_2.next_pass
 export (Color, RGBA) var liquid_color :Color setget set_liquid_color
-
+#var foam_tint:float =0.0
 var accell : Vector2
 
 func _ready():
+	#get_surface_material(0).material_pass_1.next_pass = transparent_liquid
+	#material_pass_2 = get_surface_material(0).material_pass_1.next_pass
 	material_pass_1 = get_surface_material(mat_surface)
 	material_pass_2 = material_pass_1.next_pass
-	set_fill(fill)
 	set_glass_thickness(glass_thickness)
 	set_liquid_color(liquid_color)
+	set_fill(fill)
+	
+func set_fill(value):
+	fill = value
+	if material_pass_2:
+		material_pass_2.set_shader_param(\"fill_amount\", (fill*2.0-1.0))
 
 func set_liquid_color(value):
 	liquid_color = value
@@ -44,35 +50,39 @@ func set_liquid_color(value):
 func set_glass_thickness(value):
 	glass_thickness = value
 	if material_pass_2:
-		material_pass_2.set_shader_param(\"glass_thickness\", glass_thickness)
+		material_pass_2.set_shader_param(\"glass_thickness\", glass_thickness*0.1*get_aabb().size.y*0.5)
 		#material_pass_3.set_shader_param(\"glass_thickness\", glass_thickness)
 
-func set_fill(value):
-	fill=value;
-	if material_pass_2:
-		material_pass_2.set_shader_param(\"fill_amount\", fill)
-		#material_pass_3.set_shader_param(\"fill_amount\", fill*2.0-1.0)
-
 func _physics_process(delta):
-	var accell_3d = (pos3 - 2 * pos2 + pos1) / delta / delta
+	var accell_3d:Vector3 = (pos3 - 2 * pos2 + pos1) / delta / delta
 	pos1 = pos2
 	pos2 = pos3
-	pos3 = get_global_transform().origin + rotation*2.0
-	accell = Vector2(accell_3d.x+accell_3d.y*0.5, accell_3d.z+accell_3d.y*0.5)
+	pos3 = get_global_transform().origin + rotation
+	accell = Vector2(accell_3d.x+accell_3d.y, accell_3d.z+accell_3d.y)
 	#accell = Vector2(accell_3d.x, accell_3d.z)+accell_3d.y*0.5
 	coeff_old_old = coeff_old
 	coeff_old = coeff
 	coeff = delta*delta* (-200.0*coeff_old - 10.0*accell) + 2 * coeff_old - coeff_old_old - delta * 2.0 * (coeff_old - coeff_old_old)
-	material_pass_2.set_shader_param(\"coeff\", coeff*(1.0-liquid_viscosity))
-	#material_pass_3.set_shader_param(\"coeff\", coeff*(1.0-liquid_viscosity))
+	var temp: Vector2 = coeff+coeff_old+coeff_old_old
+	#if (pos1 == pos2 and pos1 == pos3):
+	#	foam_tint =clamp(foam_tint-delta*0.1,0.0,1.0)
+	#else:
+	#	foam_tint =clamp(foam_tint+delta*1.0,0.0,1.0)
+	material_pass_2.set_shader_param(\"coeff\", coeff*liquid_mobility)
+	material_pass_2.set_shader_param(\"rot_scale\", get_transformed_aabb().size.y*0.5)
+	
 "
 
 [node name="bottle" type="MeshInstance"]
+transform = Transform( 9.98096, 0.616757, 0, -0.616757, 9.98096, 0, 0, 0, 10, -0.179342, 0, 0 )
+mesh = ExtResource( 3 )
+material/0 = ExtResource( 2 )
+script = SubResource( 1 )
+liquid_mobility = 0.2
+fill = 0.3
+liquid_color = Color( 1, 0, 0, 0.215686 )
+
+[node name="cap" type="MeshInstance" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.000369001, 0.129227, 0 )
 mesh = ExtResource( 1 )
-material/0 = SubResource( 1 )
-material/1 = ExtResource( 2 )
-script = SubResource( 2 )
-liquid_viscosity = 0.95
-fill = 0.0
-mat_surface = 1
-liquid_color = Color( 1, 0, 0, 0.270588 )
+material/0 = null
