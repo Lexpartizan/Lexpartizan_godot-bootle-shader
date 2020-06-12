@@ -1,10 +1,16 @@
-[gd_scene load_steps=5 format=2]
+[gd_scene load_steps=6 format=2]
 
 [ext_resource path="res://cap.mesh" type="ArrayMesh" id=1]
-[ext_resource path="res://bottle_with_non_transparent_liquid.tres" type="Material" id=2]
+[ext_resource path="res://liquid in bootle transparent.tres" type="Material" id=2]
 [ext_resource path="res://bottle.mesh" type="ArrayMesh" id=3]
 
-[sub_resource type="GDScript" id=1]
+[sub_resource type="SpatialMaterial" id=1]
+next_pass = ExtResource( 2 )
+flags_transparent = true
+albedo_color = Color( 1, 1, 1, 0.0470588 )
+roughness = 0.0
+
+[sub_resource type="GDScript" id=2]
 script/source = "tool
 extends MeshInstance
 
@@ -15,16 +21,18 @@ var coeff_old_old : Vector2
 export (float, 0.0,1.0,0.0001) var liquid_mobility: float = 0.0  #from 0 to 1
 export (float, 0.0,1.0,0.0001) var fill: float = 0.5 setget set_fill
 export (float, 0.0,1.0,0.0001) var glass_thickness: float = 0.1 setget set_glass_thickness #from 0 to 1
+
 onready var pos1 : Vector3 = get_global_transform().origin
 onready var pos2 : Vector3 = pos1
 onready var pos3 : Vector3 = pos2
 #onready var transparent_liquid: Material =preload(\"res://transparent liquid in bootle.tres\")
 var material_pass_1: Material
 var material_pass_2: Material
-export var mat_surface =0;
-#var material_pass_3 = material_pass_2.next_pass
+#var material_pass_3: Material
+export var mat_surface: int =0;
+export var gas: bool = true;
 export (Color, RGBA) var liquid_color :Color setget set_liquid_color
-#var foam_tint:float =0.0
+var vel:float =0.0
 var accell : Vector2
 
 func _ready():
@@ -32,26 +40,32 @@ func _ready():
 	#material_pass_2 = get_surface_material(0).material_pass_1.next_pass
 	material_pass_1 = get_surface_material(mat_surface)
 	material_pass_2 = material_pass_1.next_pass
+#	material_pass_3 = material_pass_2.next_pass
 	set_glass_thickness(glass_thickness)
 	set_liquid_color(liquid_color)
 	set_fill(fill)
+	material_pass_2.set_shader_param(\"size\", Vector2(get_aabb().size.x*0.5,get_aabb().size.y*0.5))
+	material_pass_2.set_shader_param(\"scale\", get_aabb().size.y*4.0/scale.y)
+#	
+	
 	
 func set_fill(value):
 	fill = value
-	if material_pass_2:
-		material_pass_2.set_shader_param(\"fill_amount\", (fill*2.0-1.0))
+	if is_inside_tree():
+		material_pass_2.set_shader_param(\"fill_amount\",fill)
+#		material_pass_3.set_shader_param(\"fill_amount\", (fill*2.0-1.0))
 
 func set_liquid_color(value):
 	liquid_color = value
-	if material_pass_2:
+	if is_inside_tree():
 		material_pass_2.set_shader_param(\"liquid_color\", liquid_color)
-		#material_pass_3.set_shader_param(\"liquid_color\", liquid_color)
+#		material_pass_3.set_shader_param(\"liquid_color\", liquid_color)
 
 func set_glass_thickness(value):
 	glass_thickness = value
-	if material_pass_2:
-		material_pass_2.set_shader_param(\"glass_thickness\", glass_thickness*0.1*get_aabb().size.y*0.5)
-		#material_pass_3.set_shader_param(\"glass_thickness\", glass_thickness)
+	if is_inside_tree():
+		material_pass_2.set_shader_param(\"glass_thickness\", glass_thickness*get_aabb().size.x)
+#		material_pass_3.set_shader_param(\"glass_thickness\", glass_thickness*get_aabb().size.x*0.5)
 
 func _physics_process(delta):
 	var accell_3d:Vector3 = (pos3 - 2 * pos2 + pos1) / delta / delta
@@ -59,27 +73,32 @@ func _physics_process(delta):
 	pos2 = pos3
 	pos3 = get_global_transform().origin + rotation
 	accell = Vector2(accell_3d.x+accell_3d.y, accell_3d.z+accell_3d.y)
-	#accell = Vector2(accell_3d.x, accell_3d.z)+accell_3d.y*0.5
+	#accell = Vector2(accell_3d.x, accell_3d.z)
 	coeff_old_old = coeff_old
 	coeff_old = coeff
-	coeff = delta*delta* (-200.0*coeff_old - 10.0*accell) + 2 * coeff_old - coeff_old_old - delta * 2.0 * (coeff_old - coeff_old_old)
+	#coeff = delta*delta* (-200.0*coeff_old - 10.0*accell) + 2 * coeff_old - coeff_old_old - delta * 2.0 * (coeff_old - coeff_old_old)
+	var spring_constant = 200
+	var reaction = 4
+	var dampening = 3
+	coeff = delta*delta* (-spring_constant*coeff_old - reaction*accell) + 2 * coeff_old - coeff_old_old - delta * dampening * (coeff_old - coeff_old_old)
 	var temp: Vector2 = coeff+coeff_old+coeff_old_old
-	#if (pos1 == pos2 and pos1 == pos3):
-	#	foam_tint =clamp(foam_tint-delta*0.1,0.0,1.0)
-	#else:
-	#	foam_tint =clamp(foam_tint+delta*1.0,0.0,1.0)
 	material_pass_2.set_shader_param(\"coeff\", coeff*liquid_mobility)
-	material_pass_2.set_shader_param(\"rot_scale\", get_transformed_aabb().size.y*0.5)
-	
-"
+	#material_pass_3.set_shader_param(\"coeff\", coeff*liquid_mobility)
+	if (pos1.distance_to(pos3) < 0.01):
+		vel = clamp (vel-delta*1.0,0.0,1.0)
+	else:
+		vel = 1.0#clamp (vel+delta*1.0,0.0,1.0)
+	if !gas:
+		vel = 0.0
+	material_pass_2.set_shader_param(\"vel\", vel)"
 
 [node name="bottle" type="MeshInstance"]
-transform = Transform( 9.98096, 0.616757, 0, -0.616757, 9.98096, 0, 0, 0, 10, -0.179342, 0, 0 )
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0532935, 0, -0.0197027 )
 mesh = ExtResource( 3 )
-material/0 = ExtResource( 2 )
-script = SubResource( 1 )
-liquid_mobility = 0.2
-fill = 0.3
+material/0 = SubResource( 1 )
+script = SubResource( 2 )
+liquid_mobility = 1.0
+glass_thickness = 0.01
 liquid_color = Color( 1, 0, 0, 0.215686 )
 
 [node name="cap" type="MeshInstance" parent="."]
