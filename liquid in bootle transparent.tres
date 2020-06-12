@@ -1,0 +1,17 @@
+[gd_resource type="ShaderMaterial" load_steps=3 format=2]
+
+[ext_resource path="res://liquid in bootle transparent.shader" type="Shader" id=1]
+[ext_resource path="res://worley.png" type="Texture" id=2]
+
+[resource]
+resource_local_to_scene = true
+shader = ExtResource( 1 )
+shader_param/coeff = Vector2( 0, 0 )
+shader_param/vel = 0.0
+shader_param/fill_amount = 0.5
+shader_param/size = Vector2( 0.0392937, 0.130792 )
+shader_param/glass_thickness = 0.0
+shader_param/scale = 1.04634
+shader_param/wave_intensity = 0.05
+shader_param/liquid_color = Color( 1, 0, 0, 0.388235 )
+shader_param/waves_noise = ExtResource( 2 )
