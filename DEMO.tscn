@@ -1,0 +1,37 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://plastic_bottle.tscn" type="PackedScene" id=1]
+[ext_resource path="res://plastic_bottle_with_transparent_liquid.tscn" type="PackedScene" id=2]
+
+[node name="Spatial" type="Spatial"]
+
+[node name="DirectionalLight" type="DirectionalLight" parent="."]
+transform = Transform( 1, 0, 0, 0, -0.858298, 0.513152, 0, -0.513152, -0.858298, 0, 0, 0 )
+
+[node name="plastic_bottle4" parent="." instance=ExtResource( 1 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0272256, 0, 0.336195 )
+fill = 0.665
+mat_surface = 0
+gas = true
+liquid_color = Color( 0, 1, 1, 1 )
+
+[node name="plastic_bottle" parent="." instance=ExtResource( 1 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.0138429, 0.00790971, 0.16996 )
+fill = 0.7526
+mat_surface = 0
+gas = true
+liquid_color = Color( 1, 1, 0, 1 )
+
+[node name="plastic_bottle2" parent="." instance=ExtResource( 2 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.28286, 0.000909835, -0.119878 )
+fill = 0.3057
+mat_surface = 0
+gas = true
+liquid_color = Color( 1, 0, 0, 0.219608 )
+
+[node name="plastic_bottle3" parent="." instance=ExtResource( 2 )]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, -0.0449861, 0.026768, -0.130756 )
+fill = 0.5
+mat_surface = 0
+gas = true
+liquid_color = Color( 0, 0.960784, 0, 0.345098 )
