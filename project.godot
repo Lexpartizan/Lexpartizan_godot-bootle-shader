@@ -16,7 +16,7 @@ _global_script_class_icons={
 [application]
 
 config/name="Godot Bottle Shader"
-run/main_scene="res://bottle.tscn"
+run/main_scene="res://DEMO.tscn"
 config/icon="res://icon.png"
 
 [rendering]
